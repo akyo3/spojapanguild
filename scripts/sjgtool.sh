@@ -50,7 +50,7 @@ if [ -z "$CNODE_PID" ]; then
   NETWORK_ERA="None"
 else
   NETWORK_ERA=$(${CCLI} query tip ${NETWORK_IDENTIFIER} 2>/dev/null | jq -r '.era //empty')
-  cardano-cli conway query protocol-parameters $NETWORK_IDENTIFIER --out-file $NODE_HOME/params.json
+  cardano-cli latest query protocol-parameters $NETWORK_IDENTIFIER --out-file $NODE_HOME/params.json
 fi
 
 
@@ -114,7 +114,7 @@ case ${num} in
           echo "■paymentアドレス"
           printf "${FG_YELLOW}$(cat $WALLET_PAY_ADDR_FILENAME)${NC}\n\n"
 
-          # cardano-cli conway query utxo \
+          # cardano-cli latest query utxo \
           #   --address $(cat $WALLET_PAY_ADDR_FILENAME) \
           #   $NETWORK_IDENTIFIER
 
@@ -143,7 +143,7 @@ case ${num} in
         if [ ${efile_check} == "true" ]; then
           echo "■stakeアドレス"
           printf "${FG_YELLOW}$(cat $WALLET_STAKE_ADDR_FILENAME)${NC}\n\n"
-          pool_reward=$(cardano-cli conway query stake-address-info --address $(cat $WALLET_STAKE_ADDR_FILENAME) $NETWORK_IDENTIFIER | jq .[].rewardAccountBalance)
+          pool_reward=$(cardano-cli latest query stake-address-info --address $(cat $WALLET_STAKE_ADDR_FILENAME) $NETWORK_IDENTIFIER | jq .[].rewardAccountBalance)
           #pool_reward=$(cat $PARENT/stake_json.txt | grep rewardAccountBalance | awk '{ print $2 }')
           #echo $pool_reward
           pool_reward_Amount=$(scale1 $pool_reward)
@@ -210,7 +210,7 @@ ${FG_MAGENTA}■プール資金出金($WALLET_PAY_ADDR_FILENAME)${NC}
               withdrawalString="$(cat $WALLET_STAKE_ADDR_FILENAME)+${rewardBalance}"
 
               #トランザクションファイル仮作成
-              cardano-cli conway transaction build-raw \
+              cardano-cli latest transaction build-raw \
               ${tx_in} \
               --tx-out $(cat $WALLET_PAY_ADDR_FILENAME)+${total_balance} \
               --tx-out ${destinationAddress}+${rewardBalance} \
@@ -220,7 +220,7 @@ ${FG_MAGENTA}■プール資金出金($WALLET_PAY_ADDR_FILENAME)${NC}
               --out-file tx.tmp
 
               #手数料計算
-              fee=$(cardano-cli conway transaction calculate-min-fee \
+              fee=$(cardano-cli latest transaction calculate-min-fee \
                   --tx-body-file tx.tmp \
                   --witness-count 2 \
                   --output-text \
@@ -235,7 +235,7 @@ ${FG_MAGENTA}■プール資金出金($WALLET_PAY_ADDR_FILENAME)${NC}
 
 
               #最終トランザクションファイル作成
-              cardano-cli conway transaction build-raw \
+              cardano-cli latest transaction build-raw \
               ${tx_in} \
               --tx-out $(cat $WALLET_PAY_ADDR_FILENAME)+${txOut} \
               --tx-out ${destinationAddress}+${rewardBalance} \
@@ -287,7 +287,7 @@ ${FG_MAGENTA}■プール資金出金($WALLET_PAY_ADDR_FILENAME)${NC}
               withdrawalString="$(cat $WALLET_STAKE_ADDR_FILENAME)+${rewardBalance}"
               tempRewardAmount=$(( ${total_balance}+${rewardBalance} ))
               #トランザクションファイル仮作成
-              cardano-cli conway transaction build-raw \
+              cardano-cli latest transaction build-raw \
               ${tx_in} \
               --tx-out $(cat $WALLET_PAY_ADDR_FILENAME)+${tempRewardAmount} \
               --invalid-hereafter $(( ${currentSlot} + 10000)) \
@@ -296,7 +296,7 @@ ${FG_MAGENTA}■プール資金出金($WALLET_PAY_ADDR_FILENAME)${NC}
               --out-file tx.tmp
 
               #手数料計算
-              fee=$(cardano-cli conway transaction calculate-min-fee \
+              fee=$(cardano-cli latest transaction calculate-min-fee \
                   --tx-body-file tx.tmp \
                   --witness-count 2 \
                   --output-text \
@@ -310,7 +310,7 @@ ${FG_MAGENTA}■プール資金出金($WALLET_PAY_ADDR_FILENAME)${NC}
               tx_Check $destinationAddress ${rewardBalance} $fee ${txOut}
 
               #最終トランザクションファイル作成
-              cardano-cli conway transaction build-raw \
+              cardano-cli latest transaction build-raw \
                 ${tx_in} \
                 --tx-out $(cat $WALLET_PAY_ADDR_FILENAME)+${txOut} \
                 --invalid-hereafter $(( ${currentSlot} + 10000)) \
@@ -386,7 +386,7 @@ ${FG_MAGENTA}■プール資金出金($WALLET_PAY_ADDR_FILENAME)${NC}
               #echo UTXOs: ${txcnt}
               tempBalanceAmount=$(( ${total_balance}-${amountToSend} ))
               #トランザクションファイル仮作成
-              cardano-cli conway transaction build-raw \
+              cardano-cli latest transaction build-raw \
                   ${tx_in} \
                   --tx-out $(cat $WALLET_PAY_ADDR_FILENAME)+${tempBalanceAmount} \
                   --tx-out ${destinationAddress}+${amountToSend} \
@@ -395,7 +395,7 @@ ${FG_MAGENTA}■プール資金出金($WALLET_PAY_ADDR_FILENAME)${NC}
                   --out-file tx.tmp
 
               #手数料計算
-              fee=$(cardano-cli conway transaction calculate-min-fee \
+              fee=$(cardano-cli latest transaction calculate-min-fee \
               --tx-body-file tx.tmp \
               --witness-count 1 \
               --output-text \
@@ -410,7 +410,7 @@ ${FG_MAGENTA}■プール資金出金($WALLET_PAY_ADDR_FILENAME)${NC}
               #printf "$rows" "出金後残高:" "$(scale1 ${txOut}) ADA"
 
               #最終トランザクションファイル作成
-              cardano-cli conway transaction build-raw \
+              cardano-cli latest transaction build-raw \
                   ${tx_in} \
                   --tx-out $(cat $WALLET_PAY_ADDR_FILENAME)+${txOut} \
                   --tx-out ${destinationAddress}+${amountToSend} \
@@ -507,9 +507,9 @@ ${FG_MAGENTA}■プール資金出金($WALLET_PAY_ADDR_FILENAME)${NC}
     pledge=$(cat $NODE_HOME/pooldata.txt | jq -r ".[0].pledge")
     pledge_scale=$(scale1 $pledge)
 
-    active_epoch=$(cat $NODE_HOME/pooldata.txt | jq -r ".[0].active_epoch_no")
-    future_pledge=$(cardano-cli conway query pool-params --stake-pool-id $(cat $NODE_HOME/pool.id-bech32) | jq .[].futurePoolParams.pledge)
-    current_pledge=$(cardano-cli conway query pool-params --stake-pool-id $(cat $NODE_HOME/pool.id-bech32) | jq .[].poolParams.pledge)
+    active_epoch=$(jq -r '.[0].active_epoch_no // 0' "$NODE_HOME/pooldata.txt")
+    current_pledge=$(cardano-cli latest query pool-params --stake-pool-id "$(cat "$NODE_HOME/pool.id-bech32")" | jq -r '.[].poolParams.pledge // 0')
+    future_pledge=$(cardano-cli latest query pool-params --stake-pool-id "$(cat "$NODE_HOME/pool.id-bech32")" | jq -r --arg current "$current_pledge" '.[].futurePoolParams.pledge // ($current | tonumber)')
 
     onchain_poolid=$(cat $NODE_HOME/pooldata.txt | jq -r ".[0].pool_id_bech32")
     printf "ノード起動タイプ:BP ${FG_GREEN}OK${NC}　ネットワーク:${FG_YELLOW}$NETWORK_NAME${NC}\n"
@@ -537,7 +537,7 @@ ${FG_MAGENTA}■プール資金出金($WALLET_PAY_ADDR_FILENAME)${NC}
       echo "プール運用マニュアルの「プール情報更新」で再登録してください"
       echo
     else
-      metaFileHash=$(cardano-cli conway stake-pool metadata-hash --pool-metadata-file $NODE_HOME/metaCheck/poolMetaData.json)
+      metaFileHash=$(cardano-cli latest stake-pool metadata-hash --pool-metadata-file $NODE_HOME/metaCheck/poolMetaData.json)
       if [ $metaChainHash == $metaFileHash ]; then
         printf "${FG_GREEN}OK${NC}\n"
         printf "チェーン登録ハッシュ：${FG_YELLOW}$metaChainHash${NC}\n"
@@ -556,7 +556,7 @@ ${FG_MAGENTA}■プール資金出金($WALLET_PAY_ADDR_FILENAME)${NC}
     
     koios_stake_total=$(curl -s -X POST "$KOIOS_API/account_info" -H "Accept: application/json" -H "content-type: application/json" -d "{\"_stake_addresses\":[\"$(cat $NODE_HOME/$WALLET_STAKE_ADDR_FILENAME)\"]}" | jq -r '.[].total_balance')
 
-    if [ $active_epoch -gt $current_epoch ] && [ $future_pledge -ne $current_pledge ]; then
+    if [ "$active_epoch" -gt "$current_epoch" ] && [ "$future_pledge" -ne "$current_pledge" ]; then
       pledge=$current_pledge
       pledge_scale=$(scale1 $pledge)
       future_pledge_scale=$(scale1 $future_pledge)
@@ -644,7 +644,7 @@ ${FG_MAGENTA}■プール資金出金($WALLET_PAY_ADDR_FILENAME)${NC}
     
 
     #ノードから同期済みブロック取得
-    currentblock=$(cardano-cli conway query tip $NETWORK_IDENTIFIER | jq -r '.block')
+    currentblock=$(cardano-cli latest query tip $NETWORK_IDENTIFIER | jq -r '.block')
     
 
     block_diff=$((koios_blockNo - currentblock))
@@ -721,8 +721,8 @@ ${FG_MAGENTA}■プール資金出金($WALLET_PAY_ADDR_FILENAME)${NC}
     #ローカルVRFファイル検証
     mkdir $NODE_HOME/vrf_check
     cp $NODE_HOME/$POOL_VRF_SK_FILENAME $NODE_HOME/vrf_check/
-    cardano-cli conway key verification-key --signing-key-file $NODE_HOME/vrf_check/$POOL_VRF_SK_FILENAME --verification-key-file $NODE_HOME/vrf_check/vrf.vkey
-    cardano-cli conway node key-hash-VRF --verification-key-file $NODE_HOME/vrf_check/vrf.vkey --out-file $NODE_HOME/vrf_check/vkeyhash.txt
+    cardano-cli latest key verification-key --signing-key-file $NODE_HOME/vrf_check/$POOL_VRF_SK_FILENAME --verification-key-file $NODE_HOME/vrf_check/vrf.vkey
+    cardano-cli latest node key-hash-VRF --verification-key-file $NODE_HOME/vrf_check/vrf.vkey --out-file $NODE_HOME/vrf_check/vkeyhash.txt
     local_vrf_hash=$(cat $NODE_HOME/vrf_check/vkeyhash.txt)
     
     if [ $chain_Vrf_hash == $local_vrf_hash ]; then
@@ -741,7 +741,7 @@ ${FG_MAGENTA}■プール資金出金($WALLET_PAY_ADDR_FILENAME)${NC}
     
 
     #運用証明書(node.cert)検証
-    decode_ocert_output=$(cardano-cli conway text-view decode-cbor --in-file "$NODE_HOME/$POOL_OPCERT_FILENAME")
+    decode_ocert_output=$(cardano-cli latest text-view decode-cbor --in-file "$NODE_HOME/$POOL_OPCERT_FILENAME")
     check_issuerColdKey() {
       echo "$decode_ocert_output" \
         | sed 's/#.*//' \
@@ -922,7 +922,7 @@ ${FG_MAGENTA}■プール資金出金($WALLET_PAY_ADDR_FILENAME)${NC}
     fi
 
     printf "${FG_MAGENTA}■新しいKESファイルの作成...${NC}\n"
-    cardano-cli conway node key-gen-KES \
+    cardano-cli latest node key-gen-KES \
     --verification-key-file $NODE_HOME/$POOL_HOTKEY_VK_FILENAME \
     --signing-key-file $NODE_HOME/$POOL_HOTKEY_SK_FILENAME
     sleep 2
@@ -957,19 +957,19 @@ ${FG_MAGENTA}■プール資金出金($WALLET_PAY_ADDR_FILENAME)${NC}
     #エアギャップ用スクリプト追記
     cat >> $NODE_HOME/airgap_script << EOF
     chmod u+rwx $COLDKEYS_DIR
-    cardano-cli conway node new-counter \
+    cardano-cli latest node new-counter \
       --cold-verification-key-file $COLDKEYS_DIR/$POOL_COLDKEY_VK_FILENAME \
       --counter-value $counterValue \
       --operational-certificate-issue-counter-file $COLDKEYS_DIR/$POOL_OPCERT_COUNTER_FILENAME
 
     
-    counter_no=\$(cardano-cli conway text-view decode-cbor --in-file  $COLDKEYS_DIR/$POOL_OPCERT_COUNTER_FILENAME | grep int | head -1 | cut -d"(" -f2 | cut -d")" -f1)
+    counter_no=\$(cardano-cli latest text-view decode-cbor --in-file  $COLDKEYS_DIR/$POOL_OPCERT_COUNTER_FILENAME | grep int | head -1 | cut -d"(" -f2 | cut -d")" -f1)
     echo -e "\n作成された$POOL_OPCERT_COUNTER_FILENAMEのカウンター番号は${FG_YELLOW}\$counter_no${NC}です\n"
 
     printf "${FG_MAGENTA}現在のstartKesPeriod${NC}: ${FG_YELLOW}${startKesPeriod}${NC}\n\n"
 
     cd \$NODE_HOME
-    cardano-cli conway node issue-op-cert \
+    cardano-cli latest node issue-op-cert \
       --kes-verification-key-file $POOL_HOTKEY_VK_FILENAME \
       --cold-signing-key-file $COLDKEYS_DIR/$POOL_COLDKEY_SK_FILENAME \
       --operational-certificate-issue-counter $COLDKEYS_DIR/$POOL_OPCERT_COUNTER_FILENAME \
@@ -1334,7 +1334,7 @@ read -n 1 -p "メニュー番号を入力してください : >" patch
 
       echo -e "\nWallet残高 :$(scale1 ${total_balance}) ADA\n"
       #トランザクションファイル仮作成
-      cardano-cli conway transaction build-raw \
+      cardano-cli latest transaction build-raw \
       ${tx_in} \
       --tx-out $(cat $NODE_HOME/$WALLET_PAY_ADDR_FILENAME)+${total_balance} \
       --invalid-hereafter $(( ${currentSlot} + 10000)) \
@@ -1343,7 +1343,7 @@ read -n 1 -p "メニュー番号を入力してください : >" patch
       --out-file tx.tmp
 
       #手数料計算
-      fee=$(cardano-cli conway transaction calculate-min-fee \
+      fee=$(cardano-cli latest transaction calculate-min-fee \
       --tx-body-file tx.tmp \
       --witness-count 1 \
       --output-text \
@@ -1351,7 +1351,7 @@ read -n 1 -p "メニュー番号を入力してください : >" patch
       
       txOut=$((${total_balance}-${fee}))
 
-      cardano-cli conway transaction build-raw \
+      cardano-cli latest transaction build-raw \
       ${tx_in} \
       --tx-out $(cat $NODE_HOME/$WALLET_PAY_ADDR_FILENAME)+${txOut} \
       --invalid-hereafter $(( ${currentSlot} + 10000)) \
@@ -1373,7 +1373,7 @@ read -n 1 -p "メニュー番号を入力してください : >" patch
       echo -e "${FG_YELLOW}2. エアギャップでトランザクションファイルに署名してください${NC}"
       echo '----------------------------------------'
       echo 'cd $NODE_HOME'
-      echo 'cardano-cli conway transaction sign \'
+      echo 'cardano-cli latest transaction sign \'
       echo '  --tx-body-file tx.raw \'
       echo '  --signing-key-file payment.skey \'
       echo "  $NETWORK_IDENTIFIER "'\'
@@ -1636,7 +1636,7 @@ air_gap(){
   echo -e "${FG_YELLOW}2. エアギャップでトランザクションファイルに署名してください${NC}"
   echo '----------------------------------------'
   echo 'cd $NODE_HOME'
-  echo 'cardano-cli conway transaction sign \'
+  echo 'cardano-cli latest transaction sign \'
   echo '  --tx-body-file tx.raw \'
   echo '  --signing-key-file payment.skey \'
   echo '  --signing-key-file stake.skey \'
@@ -1667,7 +1667,7 @@ air_gap_payment_only(){
   echo -e "${FG_YELLOW}2. エアギャップでトランザクションファイルに署名してください${NC}"
   echo '----------------------------------------'
   echo 'cd $NODE_HOME'
-  echo 'cardano-cli conway transaction sign \'
+  echo 'cardano-cli latest transaction sign \'
   echo '  --tx-body-file tx.raw \'
   echo '  --signing-key-file payment.skey \'
   echo "  $NETWORK_IDENTIFIER "'\'
@@ -1980,7 +1980,7 @@ case \$delegate_value in
 ;;
 esac
 echo
-cardano-cli conway stake-address vote-delegation-certificate \
+cardano-cli latest stake-address vote-delegation-certificate \
   --stake-verification-key-file \$NODE_HOME/$WALLET_STAKE_VK_FILENAME \
   $delegate_value \
   --out-file \$NODE_HOME/governance/drep-deleg.cert
@@ -1988,7 +1988,7 @@ cardano-cli conway stake-address vote-delegation-certificate \
 echo "委任証明書ファイルを作成しました"
 sleep 2
 
-cardano-cli conway transaction build-raw \\
+cardano-cli latest transaction build-raw \\
 $tx_in \\
 --tx-out \$(cat \$NODE_HOME/payment.addr)+${total_balance}  \\
 --invalid-hereafter \$(( ${currentSlot} + 10000)) \\
@@ -1996,7 +1996,7 @@ $tx_in \\
 --certificate-file \$NODE_HOME/governance/drep-deleg.cert \\
 --out-file \$NODE_HOME/governance/drep-tx.tmp
 
-fee=\$(cardano-cli conway transaction calculate-min-fee \\
+fee=\$(cardano-cli latest transaction calculate-min-fee \\
 --tx-body-file \$NODE_HOME/governance/drep-tx.tmp \\
 --witness-count 2 \\
 --output-text \\
@@ -2005,7 +2005,7 @@ echo Tx手数料: \$fee Lovelace
 sleep 2
 txOut=\$((${total_balance}-\${fee}))
 
-cardano-cli conway transaction build-raw \\
+cardano-cli latest transaction build-raw \\
 $tx_in \\
 --tx-out \$(cat \$NODE_HOME/payment.addr)+\${txOut} \\
 --invalid-hereafter \$(( ${currentSlot} + 10000)) \\
@@ -2015,7 +2015,7 @@ $tx_in \\
 
 echo "Txファイルを作成しました"
 sleep 2
-cardano-cli conway transaction sign \\
+cardano-cli latest transaction sign \\
 --tx-body-file \$NODE_HOME/governance/drep-tx.raw \\
 --signing-key-file \$NODE_HOME/$WALLET_STAKE_SK_FILENAME \\
 --signing-key-file \$NODE_HOME/$WALLET_PAY_SK_FILENAME \\
@@ -2078,7 +2078,7 @@ choose_proposal(){
     echo
     if [ "$voter_type" == "SPO" ]; then
       echo "ガバナンスアクション一覧を取得中..."
-      gov_state_json=$(cardano-cli conway query gov-state ${NODE_NETWORK})
+      gov_state_json=$(cardano-cli latest query gov-state ${NODE_NETWORK})
       local spo_available_type=("NoConfidence" "NewCommittee" "HardForkInitiation" "UpdateCommittee" "ParameterChange" "InfoAction")
       mapfile -t proposal_list < <(echo "$gov_state_json" | jq -r --argjson now "$current_epoch" '
         def security_keys:
@@ -2162,7 +2162,7 @@ choose_proposal(){
         governance_id_hex="${governance_id_tx}${governance_action_index_hex}"
         governance_id_bech32=$(/usr/local/bin/bech32 gov_action <<< "$governance_id_hex")
         vote_proposal=
-        vote_proposal=$(cardano-cli conway query gov-state ${NODE_NETWORK} | jq -r --arg txid "$governance_id_tx" --argjson ix "$governance_action_index" '.proposals | to_entries[] | select(.value.actionId.txId==$txid and .value.actionId.govActionIx==$ix) | .value')
+        vote_proposal=$(cardano-cli latest query gov-state ${NODE_NETWORK} | jq -r --arg txid "$governance_id_tx" --argjson ix "$governance_action_index" '.proposals | to_entries[] | select(.value.actionId.txId==$txid and .value.actionId.govActionIx==$ix) | .value')
       else
         printf "\n${FG_RED}64文字以上で入力してください${NC}\n"
         continue
@@ -2487,7 +2487,7 @@ if [[ -n "\$anchor_url" ]]; then
   printf "%15s ${FG_GREEN}%-s${NC}\n" "Anchor Hash:" "\$anchor_data_hash"
 fi
 echo
-cardano-cli conway governance vote create \
+cardano-cli latest governance vote create \
 --${vote_value_flag} \
 --governance-action-tx-id $governance_id_tx \
 --governance-action-index "$governance_action_index" \
@@ -2499,7 +2499,7 @@ ${coldkey_flag} \
 echo "投票ファイルを作成しました"
 sleep 2
 
-cardano-cli conway transaction build-raw \\
+cardano-cli latest transaction build-raw \\
 $tx_in \\
 --tx-out \$(cat \$NODE_HOME/payment.addr)+${total_balance}  \\
 --vote-file \$NODE_HOME/governance/${voter_type}_voted_$governance_id_tx \\
@@ -2507,7 +2507,7 @@ $tx_in \\
 --fee 200000 \\
 --out-file \$NODE_HOME/governance/vote-tx.tmp
 
-fee=\$(cardano-cli conway transaction calculate-min-fee \\
+fee=\$(cardano-cli latest transaction calculate-min-fee \\
 --tx-body-file \$NODE_HOME/governance/vote-tx.tmp \\
 --witness-count 2 \\
 --output-text \\
@@ -2516,7 +2516,7 @@ echo Tx手数料: \$fee Lovelace
 sleep 2
 txOut=\$((${total_balance}-\${fee}))
 
-cardano-cli conway transaction build-raw \\
+cardano-cli latest transaction build-raw \\
 $tx_in \\
 --tx-out \$(cat \$NODE_HOME/payment.addr)+\${txOut} \\
 --vote-file \$NODE_HOME/governance/${voter_type}_voted_$governance_id_tx \\
@@ -2526,7 +2526,7 @@ $tx_in \\
 
 echo "Txファイルを作成しました"
 sleep 2
-cardano-cli conway transaction sign \\
+cardano-cli latest transaction sign \\
 --tx-body-file \$NODE_HOME/governance/vote-tx.raw \\
 ${signingkey_flag} \\
 --signing-key-file \$NODE_HOME/payment.skey \\
@@ -2589,7 +2589,7 @@ rm $NODE_HOME/create_votetx_script
 #stake.addr残高確認
 reward_Balance(){
   cd $NODE_HOME
-    rewardBalance=$(cardano-cli conway query stake-address-info \
+    rewardBalance=$(cardano-cli latest query stake-address-info \
         $NETWORK_IDENTIFIER \
         --address $(cat $WALLET_STAKE_ADDR_FILENAME) | jq -r ".[0].rewardAccountBalance")
     echo "プール報酬: $(scale1 $rewardBalance) ADA"
@@ -2605,7 +2605,7 @@ reward_Balance(){
 
 #現在のスロット
 current_Slot(){
-  currentSlot=$(cardano-cli conway query tip $NETWORK_IDENTIFIER | jq -r '.slot')
+  currentSlot=$(cardano-cli latest query tip $NETWORK_IDENTIFIER | jq -r '.slot')
   #echo Current Slot: $currentSlot
 }
 
@@ -2618,7 +2618,7 @@ koios_current_Slot(){
 #payment.addrUTXO算出
 payment_utxo(){
   cd $NODE_HOME
-  cardano-cli conway query utxo \
+  cardano-cli latest query utxo \
     --address $(cat $WALLET_PAY_ADDR_FILENAME) \
     $NETWORK_IDENTIFIER \
     --output-text \
@@ -2655,12 +2655,12 @@ tx_submit(){
             echo '----------------------------------------'
             echo 'Tx送信結果'
             echo '----------------------------------------'
-            tx_result=$(cardano-cli conway transaction submit --tx-file ${1}/${2} ${NETWORK_IDENTIFIER})
+            tx_result=$(cardano-cli latest transaction submit --tx-file ${1}/${2} ${NETWORK_IDENTIFIER})
             if [[ -n $tx_result ]]; then
               if dpkg --compare-versions "$node_version" ge "10.2.1"; then
                 tx_id=$(echo $tx_result | jq .txhash | sed 's/"//g')
               else
-                tx_id=$(cardano-cli conway transaction txid --tx-body-file ${1}/${2})
+                tx_id=$(cardano-cli latest transaction txid --tx-body-file ${1}/${2})
                 echo $tx_result
               fi
               echo 'TxID:' $tx_id
@@ -2828,7 +2828,7 @@ poolfileCheck(){
     echo "エアギャップ $POOL_ID_BECH32_FILENAME作成コマンド"
     echo '---------------------------------------------------------------'
     echo "chmod u+rwx $COLDKEYS_DIR"
-    echo 'cardano-cli conway stake-pool id \'
+    echo 'cardano-cli latest stake-pool id \'
     echo    "--cold-verification-key-file $COLDKEYS_DIR/$POOL_COLDKEY_VK_FILENAME"' \'
     echo    "--output-format bech32 > \$NODE_HOME/$POOL_ID_BECH32_FILENAME"
     echo "chmod a-rwx $COLDKEYS_DIR"
